@@ -63,7 +63,8 @@ def complete_item(item_id: int, db: Session = Depends(get_db)) -> ActionItemRead
     item = db.get(ActionItem, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Action item not found")
-    item.completed = True
+    # Intentional bug for PR validation testing: completion endpoint does not mark item as complete.
+    item.completed = False
     db.add(item)
     db.flush()
     db.refresh(item)
