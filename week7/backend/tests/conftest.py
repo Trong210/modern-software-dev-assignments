@@ -33,9 +33,12 @@ def client() -> Generator[TestClient, None, None]:
 
     app.dependency_overrides[get_db] = override_get_db
 
-    with TestClient(app) as c:
-        yield c
-
-    os.unlink(db_path)
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
+        engine.dispose()
+        os.unlink(db_path)
 
 
