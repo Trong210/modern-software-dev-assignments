@@ -22,3 +22,28 @@ def test_create_complete_list_and_patch_action_item(client):
     assert patched["description"] == "Updated"
 
 
+def test_get_delete_and_validate_action_items(client):
+    r = client.post("/action-items/", json={"description": "Review PR"})
+    assert r.status_code == 201, r.text
+    item = r.json()
+
+    r = client.get(f"/action-items/{item['id']}")
+    assert r.status_code == 200
+    assert r.json()["description"] == "Review PR"
+
+    r = client.delete(f"/action-items/{item['id']}")
+    assert r.status_code == 204, r.text
+
+    r = client.get(f"/action-items/{item['id']}")
+    assert r.status_code == 404
+
+    r = client.post("/action-items/", json={"description": "   "})
+    assert r.status_code == 422
+
+    r = client.get("/action-items/", params={"sort": "-bogus"})
+    assert r.status_code == 400
+
+    r = client.get("/action-items/", params={"limit": 0})
+    assert r.status_code == 422
+
+

@@ -23,3 +23,24 @@ def test_create_list_and_patch_notes(client):
     assert patched["title"] == "Updated"
 
 
+def test_delete_note_and_validate_inputs(client):
+    r = client.post("/notes/", json={"title": "Keep", "content": "Delete me"})
+    assert r.status_code == 201, r.text
+    note_id = r.json()["id"]
+
+    r = client.delete(f"/notes/{note_id}")
+    assert r.status_code == 204, r.text
+
+    r = client.get(f"/notes/{note_id}")
+    assert r.status_code == 404
+
+    r = client.post("/notes/", json={"title": "   ", "content": "Valid"})
+    assert r.status_code == 422
+
+    r = client.get("/notes/", params={"sort": "-bogus"})
+    assert r.status_code == 400
+
+    r = client.get("/notes/", params={"skip": -1})
+    assert r.status_code == 422
+
+

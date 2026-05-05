@@ -1,11 +1,30 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+
+
+def _normalize_non_empty_string(value: str | None, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return value
+
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{field_name} must not be empty")
+    return normalized
 
 
 class NoteCreate(BaseModel):
-    title: str
+    title: str = Field(max_length=200)
     content: str
+
+    @field_validator("title", "content")
+    @classmethod
+    def validate_text_fields(cls, value: str) -> str:
+        normalized = _normalize_non_empty_string(value, "Note field")
+        assert normalized is not None
+        return normalized
 
 
 class NoteRead(BaseModel):
@@ -20,12 +39,24 @@ class NoteRead(BaseModel):
 
 
 class NotePatch(BaseModel):
-    title: str | None = None
+    title: str | None = Field(default=None, max_length=200)
     content: str | None = None
+
+    @field_validator("title", "content")
+    @classmethod
+    def validate_text_fields(cls, value: str | None) -> str | None:
+        return _normalize_non_empty_string(value, "Note field")
 
 
 class ActionItemCreate(BaseModel):
     description: str
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, value: str) -> str:
+        normalized = _normalize_non_empty_string(value, "description")
+        assert normalized is not None
+        return normalized
 
 
 class ActionItemRead(BaseModel):
@@ -42,5 +73,10 @@ class ActionItemRead(BaseModel):
 class ActionItemPatch(BaseModel):
     description: str | None = None
     completed: bool | None = None
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, value: str | None) -> str | None:
+        return _normalize_non_empty_string(value, "description")
 
 
