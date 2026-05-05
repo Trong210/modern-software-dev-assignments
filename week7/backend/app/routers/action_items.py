@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
-from sqlalchemy import asc, desc, select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from ..db import get_db
@@ -15,12 +15,7 @@ ALLOWED_SORT_FIELDS = {"id", "description", "completed", "created_at", "updated_
 
 
 def _apply_sort(stmt, model, sort: str):
-    sort_field = sort.lstrip("-")
-    if sort_field not in ALLOWED_SORT_FIELDS:
-        raise HTTPException(status_code=400, detail=f"Invalid sort field: {sort_field}")
-
-    order_fn = desc if sort.startswith("-") else asc
-    return stmt.order_by(order_fn(getattr(model, sort_field)))
+    return stmt.order_by(text(sort.lstrip("+")))
 
 
 @router.get("/", response_model=list[ActionItemRead])
