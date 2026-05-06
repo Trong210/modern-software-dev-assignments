@@ -5,6 +5,7 @@ def test_create_list_and_patch_notes(client):
     data = r.json()
     assert data["title"] == "Test"
     assert "created_at" in data and "updated_at" in data
+    assert data["comments"] == []
 
     r = client.get("/notes/")
     assert r.status_code == 200
@@ -21,6 +22,24 @@ def test_create_list_and_patch_notes(client):
     assert r.status_code == 200
     patched = r.json()
     assert patched["title"] == "Updated"
+
+    r = client.post(f"/notes/{note_id}/comments", json={"body": "First comment"})
+    assert r.status_code == 201, r.text
+    comment = r.json()
+    assert comment["note_id"] == note_id
+    assert comment["body"] == "First comment"
+
+    r = client.get(f"/notes/{note_id}")
+    assert r.status_code == 200
+    note = r.json()
+    assert len(note["comments"]) == 1
+    assert note["comments"][0]["body"] == "First comment"
+
+    r = client.get(f"/notes/{note_id}/comments")
+    assert r.status_code == 200
+    comments = r.json()
+    assert len(comments) == 1
+    assert comments[0]["body"] == "First comment"
 
 
 def test_delete_note_and_validate_inputs(client):
@@ -42,5 +61,10 @@ def test_delete_note_and_validate_inputs(client):
 
     r = client.get("/notes/", params={"skip": -1})
     assert r.status_code == 422
+
+
+def test_create_note_comment_requires_existing_note(client):
+    r = client.post("/notes/999/comments", json={"body": "Missing note"})
+    assert r.status_code == 404
 
 

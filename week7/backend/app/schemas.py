@@ -33,6 +33,7 @@ class NoteRead(BaseModel):
     content: str
     created_at: datetime
     updated_at: datetime
+    comments: list["NoteCommentRead"] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
@@ -78,5 +79,27 @@ class ActionItemPatch(BaseModel):
     @classmethod
     def validate_description(cls, value: str | None) -> str | None:
         return _normalize_non_empty_string(value, "description")
+
+
+class NoteCommentCreate(BaseModel):
+    body: str
+
+    @field_validator("body")
+    @classmethod
+    def validate_body(cls, value: str) -> str:
+        normalized = _normalize_non_empty_string(value, "body")
+        assert normalized is not None
+        return normalized
+
+
+class NoteCommentRead(BaseModel):
+    id: int
+    note_id: int
+    body: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
