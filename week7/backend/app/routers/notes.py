@@ -6,8 +6,8 @@ from sqlalchemy import asc, desc, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Note
-from ..schemas import NoteCreate, NotePatch, NoteRead
+from ..models import Note, NoteComment
+from ..schemas import NoteCommentCreate, NoteCommentRead, NoteCreate, NotePatch, NoteRead
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
@@ -81,5 +81,28 @@ def get_note(note_id: int, db: Session = Depends(get_db)) -> NoteRead:
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     return NoteRead.model_validate(note)
+
+
+@router.get("/{note_id}/comments", response_model=list[NoteCommentRead])
+def list_note_comments(note_id: int, db: Session = Depends(get_db)) -> list[NoteCommentRead]:
+    note = db.get(Note, note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return [NoteCommentRead.model_validate(comment) for comment in note.comments]
+
+
+@router.post("/{note_id}/comments", response_model=NoteCommentRead, status_code=201)
+def create_note_comment(
+    note_id: int, payload: NoteCommentCreate, db: Session = Depends(get_db)
+) -> NoteCommentRead:
+    note = db.get(Note, note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    comment = NoteComment(note_id=note_id, body=payload.body)
+    db.add(comment)
+    db.flush()
+    db.refresh(comment)
+    return NoteCommentRead.model_validate(comment)
 
 
